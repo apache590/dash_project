@@ -10,12 +10,16 @@ import plotly.io as poi
 
 poi.renderers.default = 'browser'
 
-df = pd.read_excel('date_2023_year.xlsx')
-df['Код вида расходов'] = df['Код вида расходов'].astype(str)
+dict_conv={
+    'Глава': lambda x: str(x),
+    'Код вида расходов': lambda x: str(x)
+    }
+
+df = pd.read_excel('date_2023_year.xlsx', converters=dict_conv)
 
 app = dash.Dash(__name__, external_stylesheets=[dbs.themes.BOOTSTRAP])
 
-fig_pie = px.pie(data_frame=df, values='Доведено ЛБО', names='Код вида расходов', title='Распределение ЛБО по видам расходов')
+fig_pie = px.pie(data_frame=df, values='Доведено ЛБО', names='Код вида расходов', title='Распределение ЛБО по видам расходов',)
 
 fig_histograms_types_of_expenses = go.Figure()
 fig_histograms_types_of_expenses.add_trace(go.Histogram(
@@ -98,6 +102,41 @@ fig_histograms_national_project.update_layout(
     xaxis_title_text='Код национального проекта',
     yaxis_title_text='Сумма'
 )
+
+fig_histograms_chapter = go.Figure()
+fig_histograms_chapter.add_trace(go.Histogram(
+    x=df['Глава'],
+    y=df['Доведено ЛБО'],
+    name='Доведено ЛБО',
+    histfunc='sum',
+    marker_color='#EB89B5',
+    opacity=0.75
+))
+
+fig_histograms_chapter.add_trace(go.Histogram(
+    x=df['Глава'],
+    y=df['Принято БО: всего'],
+    name='Принято БО: всего',
+    histfunc='sum',
+    marker_color='#330C73',
+    opacity=0.75
+))
+
+fig_histograms_chapter.add_trace(go.Histogram(
+    x=df['Глава'],
+    y=df['Исполнено ДО'],
+    name='Исполнено ДО',
+    histfunc='sum',
+    marker_color='#FF1493',
+    opacity=0.75
+))
+
+fig_histograms_chapter.update_layout(
+    title_text='Исполнение по главам',
+    xaxis_title_text='Глава',
+    yaxis_title_text='Сумма'
+)
+
 app.layout = html.Div([
     dbs.Row(html.H1('Отчёт по исполнению Федерального бюджета по расходам УФК по Пермскому краю')),
     dbs.Row([
@@ -105,24 +144,37 @@ app.layout = html.Div([
             # html.Div('Виды расходов'),
             dcc.Graph(figure=fig_pie)
         ],
-        width={'size':4}
+        width={'size':6}
         ),
         dbs.Col([
             # html.Div('Уровень принятых БО к ЛБО'),
+            dcc.Graph(figure=fig_histograms_chapter)
+        ],
+        width={'size':6}
+        )
+    ],
+    justify='start'
+),
+    dbs.Row([
+        dbs.Col([
+            # html.Div('Виды расходов'),
             dcc.Graph(figure=fig_histograms_types_of_expenses)
         ],
-        width={'size':4}
+        width={'size':6}
         ),
         dbs.Col([
+            # html.Div('Уровень принятых БО к ЛБО'),
             dcc.Graph(figure=fig_histograms_national_project)
-        ], width={'size':4}
+        ],
+        width={'size':6}
         )
     ],
     justify='start'
 )
-],style={'text-align':'left',
+    ],
+style={'text-align':'left',
          'margin-left':'20px'}
-         )
+)         
 
 if __name__ == '__main__':
     app.run_server(debug=True)
